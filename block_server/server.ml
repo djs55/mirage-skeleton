@@ -109,14 +109,13 @@ let run t (domid,devid) =
         else raise Eagain
       with Xs_protocol.Enoent _ -> raise Eagain
     ) in
-
+    printf "frontend state >= initialised\n%!";
     lwt frontend = readv frontend_path Blkproto.RingInfo.key_prefixes in
-    printf "3 (frontend state=3)\n%!";
     let ring_info = match Blkproto.RingInfo.of_assoc_list frontend with
       | `OK x -> x
       | `Error x -> failwith x in
      
-    printf "%s\n%!" (Blkproto.RingInfo.to_string ring_info);
+    printf "ring = %s\n%!" (Blkproto.RingInfo.to_string ring_info);
     let device_read page ofs sector_start sector_end =
       try_lwt
         let buf = Cstruct.of_bigarray page in
@@ -143,6 +142,7 @@ let run t (domid,devid) =
       Blkback.read = device_read;
       Blkback.write = device_write;
     } in
+    printf "backend state = connected\n%!";
     lwt () = writev (List.map (fun (k, v) -> backend_path ^ "/" ^ k, v) (Blkproto.State.to_assoc_list Blkproto.State.Connected)) in
 
     (* wait for the frontend to disappear or enter a Closed state *)
